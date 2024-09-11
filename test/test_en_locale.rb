@@ -34,6 +34,11 @@ class TestEnLocale < Test::Unit::TestCase
     assert(Faker::IdNumber::INVALID_SSN.any? { |regex| id_num =~ regex })
   end
 
+  def test_en_commerce_methods
+    assert_kind_of String, Faker::Commerce.business
+    assert_kind_of String, Faker::Commerce.vendor
+  end
+
   def test_values_trimmed
     en_file = YAML.load_file('lib/locales/en.yml')
     check_hash(en_file)

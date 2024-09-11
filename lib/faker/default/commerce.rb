@@ -140,6 +140,20 @@ module Faker
         fetch('commerce.vendor')
       end
 
+      ##
+      # Produces a randomized string of a business name
+      # @example
+      #   Faker::Commerce.business #=> 'Damien Bakery'
+      #
+      # @return [string]
+      #
+      # @faker.version next
+      #
+      ##
+      def business
+        fetch('commerce.business')
+      end
+
       private
 
       def categories(num)
