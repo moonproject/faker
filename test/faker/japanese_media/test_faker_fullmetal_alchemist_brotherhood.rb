@@ -4,18 +4,38 @@ require_relative '../../test_helper'
 
 class TestFakerFmaBrotherhood < Test::Unit::TestCase
   def setup
-    @tester = Faker::JapaneseMedia::FmaBrotherhood
+    Faker::Deprecator.skip_warning do
+      @tester = Faker::JapaneseMedia::FmaBrotherhood
+    end
   end
 
   def test_character
-    assert @tester.character.match(/\w+/)
+    assert_match(/\w+/, @tester.character)
   end
 
   def test_city
-    assert @tester.city.match(/\w+/)
+    assert_match(/\w+/, @tester.city)
   end
 
   def test_country
-    assert @tester.country.match(/\w+/)
+    assert_match(/\w+/, @tester.country)
+  end
+end
+
+class TestFakerFullmetalAlchemistBrotherhood < Test::Unit::TestCase
+  def setup
+    @tester = Faker::JapaneseMedia::FullmetalAlchemistBrotherhood
+  end
+
+  def test_character
+    assert_match(/\w+/, @tester.character)
+  end
+
+  def test_city
+    assert_match(/\w+/, @tester.city)
+  end
+
+  def test_country
+    assert_match(/\w+/, @tester.country)
   end
 end

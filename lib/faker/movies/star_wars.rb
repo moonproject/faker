@@ -138,11 +138,7 @@ module Faker
         #     #=> "Aren't you a little short for a Stormtrooper?"
         #
         # @faker.version 1.6.2
-        def quote(legacy_character = NOT_GIVEN, character: nil)
-          warn_for_deprecated_arguments do |keywords|
-            keywords << :character if legacy_character != NOT_GIVEN
-          end
-
+        def quote(character: nil)
           quoted_characters = translate('faker.star_wars.quotes')
 
           if character.nil?
@@ -208,7 +204,7 @@ module Faker
         # @example
         #   Faker::Movies::StarWars.droids
         #
-        # @faker.versionn 1.6.2
+        # @faker.version 1.6.2
         def droids
           fetch_all('star_wars.droids')
         end

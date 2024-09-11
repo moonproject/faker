@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Faker
-  class IDNumber < Base
+  class IdNumber < Base
     CHECKS = 'TRWAGMYFPDXBNJZSQVHLCKE'
     INVALID_SSN = [
       /0{3}-\d{2}-\d{4}/,
@@ -25,7 +25,7 @@ module Faker
       # @return [String]
       #
       # @example
-      #   Faker::IDNumber.valid #=> "552-56-3593"
+      #   Faker::IdNumber.valid #=> "552-56-3593"
       #
       # @faker.version 1.6.0
       def valid
@@ -38,7 +38,7 @@ module Faker
       # @return [String]
       #
       # @example
-      #   Faker::IDNumber.invalid #=> "311-72-0000"
+      #   Faker::IdNumber.invalid #=> "311-72-0000"
       #
       # @faker.version 1.6.0
       def invalid
@@ -46,9 +46,23 @@ module Faker
       end
 
       def ssn_valid
-        ssn = regexify(/[0-8]\d{2}-\d{2}-\d{4}/)
-        # We could still have all 0s in one segment or another
-        INVALID_SSN.any? { |regex| regex =~ ssn } ? ssn_valid : ssn
+        generate(:string) do |g|
+          g.computed(name: :first) do
+            range = [1..665, 667..899].sample(random: Faker::Config.random)
+            n = Faker::Base.rand(range)
+            format('%03d', n)
+          end
+          g.lit('-')
+          g.computed(name: :second) do
+            n = Faker::Base.rand(1..99)
+            format('%02d', n)
+          end
+          g.lit('-')
+          g.computed(name: :third) do
+            n = Faker::Base.rand(1..9999)
+            format('%04d', n)
+          end
+        end
       end
 
       ##
@@ -57,7 +71,7 @@ module Faker
       # @return [String]
       #
       # @example
-      #   Faker::IDNumber.spanish_citizen_number #=> "53290236-H"
+      #   Faker::IdNumber.spanish_citizen_number #=> "53290236-H"
       #
       # @faker.version 1.9.0
       def spanish_citizen_number
@@ -73,7 +87,7 @@ module Faker
       # @return [String]
       #
       # @example
-      #   Faker::IDNumber.spanish_foreign_citizen_number #=> "Z-1600870-Y"
+      #   Faker::IdNumber.spanish_foreign_citizen_number #=> "Z-1600870-Y"
       #
       # @faker.version 1.9.0
       def spanish_foreign_citizen_number
@@ -92,8 +106,8 @@ module Faker
       # @return [String]
       #
       # @example
-      #   Faker::IDNumber.south_african_id_number #=> "8105128870184"
-      #   Faker::IDNumber.valid_south_african_id_number #=> "8105128870184"
+      #   Faker::IdNumber.south_african_id_number #=> "8105128870184"
+      #   Faker::IdNumber.valid_south_african_id_number #=> "8105128870184"
       #
       # @faker.version 1.9.2
       def valid_south_african_id_number
@@ -115,7 +129,7 @@ module Faker
       # @return [String]
       #
       # @example
-      #   Faker::IDNumber.invalid_south_african_id_number #=> "1642972065088"
+      #   Faker::IdNumber.invalid_south_african_id_number #=> "1642972065088"
       #
       # @faker.version 1.9.2
       def invalid_south_african_id_number
@@ -142,15 +156,11 @@ module Faker
       # @return [String]
       #
       # @example
-      #   Faker::IDNumber.brazilian_citizen_number #=> "53540542221"
-      #   Faker::IDNumber.brazilian_citizen_number(formatted: true) #=> "535.405.422-21"
+      #   Faker::IdNumber.brazilian_citizen_number #=> "53540542221"
+      #   Faker::IdNumber.brazilian_citizen_number(formatted: true) #=> "535.405.422-21"
       #
       # @faker.version 1.9.2
-      def brazilian_citizen_number(legacy_formatted = NOT_GIVEN, formatted: false)
-        warn_for_deprecated_arguments do |keywords|
-          keywords << :formatted if legacy_formatted != NOT_GIVEN
-        end
-
+      def brazilian_citizen_number(formatted: false)
         digits = Faker::Number.leading_zero_number(digits: 9) until digits&.match(/(\d)((?!\1)\d)+/)
         first_digit = brazilian_citizen_number_checksum_digit(digits)
         second_digit = brazilian_citizen_number_checksum_digit(digits + first_digit)
@@ -167,15 +177,11 @@ module Faker
       # @return [String]
       #
       # @example
-      #   Faker::IDNumber.brazilian_id #=> "493054029"
-      #   Faker::IDNumber.brazilian_id(formatted: true) #=> "49.305.402-9"
+      #   Faker::IdNumber.brazilian_id #=> "493054029"
+      #   Faker::IdNumber.brazilian_id(formatted: true) #=> "49.305.402-9"
       #
       # @faker.version 2.1.2
-      def brazilian_id(legacy_formatted = NOT_GIVEN, formatted: false)
-        warn_for_deprecated_arguments do |keywords|
-          keywords << :formatted if legacy_formatted != NOT_GIVEN
-        end
-
+      def brazilian_id(formatted: false)
         digits = Faker::Number.between(to: BRAZILIAN_ID_FROM, from: BRAZILIAN_ID_TO).to_s
         check_digit = brazilian_id_checksum_digit(digits)
         number = [digits, check_digit].join
@@ -190,7 +196,7 @@ module Faker
       # @return [String]
       #
       # @example
-      #   Faker::IDNumber.chilean_id #=> "15620613-K"
+      #   Faker::IdNumber.chilean_id #=> "15620613-K"
       #
       # @faker.version 2.1.2
       def chilean_id
@@ -207,8 +213,8 @@ module Faker
       # @return [String]
       #
       # @example
-      #   Faker::IDNumber.croatian_id #=> "88467617508"
-      #   Faker::IDNumber.croatian_id(international: true) #=> "HR88467617508"
+      #   Faker::IdNumber.croatian_id #=> "88467617508"
+      #   Faker::IdNumber.croatian_id(international: true) #=> "HR88467617508"
       #
       # @faker.version next
       def croatian_id(international: false)
@@ -232,10 +238,10 @@ module Faker
       # @return [String]
       #
       # @example
-      #   Faker::IDNumber.danish_id_number #=> "0503909980"
-      #   Faker::IDNumber.danish_id_number(formatted: true) #=> "050390-9980"
-      #   Faker::IDNumber.danish_id_number(birthday: Date.new(1990, 3, 5)) #=> "0503909980"
-      #   Faker::IDNumber.danish_id_number(gender: :female) #=> "0503909980"
+      #   Faker::IdNumber.danish_id_number #=> "0503909980"
+      #   Faker::IdNumber.danish_id_number(formatted: true) #=> "050390-9980"
+      #   Faker::IdNumber.danish_id_number(birthday: Date.new(1990, 3, 5)) #=> "0503909980"
+      #   Faker::IdNumber.danish_id_number(gender: :female) #=> "0503909980"
       #
       # @faker.version next
       def danish_id_number(formatted: false, birthday: Faker::Date.birthday, gender: nil)
@@ -269,7 +275,7 @@ module Faker
       # @return [String]
       #
       # @example
-      #   Faker::IDNumber.french_insee_number #=> "53290236-H"
+      #   Faker::IdNumber.french_insee_number #=> "53290236-H"
       #
       # @faker.version next
       def french_insee_number
@@ -415,4 +421,7 @@ module Faker
       end
     end
   end
+
+  include Faker::Deprecator
+  deprecate_generator('IDNumber', IdNumber)
 end

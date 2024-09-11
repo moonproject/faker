@@ -4,23 +4,25 @@ mydir = __dir__
 
 require 'psych'
 require 'i18n'
-require 'set' # Fixes a bug in i18n 0.6.11
 
 Dir.glob(File.join(mydir, 'helpers', '*.rb')).sort.each { |file| require file }
 
 I18n.load_path += Dir[File.join(mydir, 'locales', '**/*.yml')]
-I18n.reload! if I18n.backend.initialized?
 
 module Faker
   module Config
+    @default_locale = nil
+
     class << self
+      attr_writer :default_locale
+
       def locale=(new_locale)
         Thread.current[:faker_config_locale] = new_locale
       end
 
       def locale
         # Because I18n.locale defaults to :en, if we don't have :en in our available_locales, errors will happen
-        Thread.current[:faker_config_locale] || (I18n.available_locales.include?(I18n.locale) ? I18n.locale : I18n.available_locales.first)
+        Thread.current[:faker_config_locale] || @default_locale || (I18n.available_locales.include?(I18n.locale) ? I18n.locale : I18n.available_locales.first)
       end
 
       def own_locale
@@ -50,17 +52,21 @@ module Faker
 
       ## by default numerify results do not start with a zero
       def numerify(number_string, leading_zero: false)
-        return number_string.gsub(/#/) { rand(10).to_s } if leading_zero
+        return number_string.gsub('#') { rand(10).to_s } if leading_zero
 
-        number_string.sub(/#/) { rand(1..9).to_s }.gsub(/#/) { rand(10).to_s }
+        number_string.sub('#') { rand(1..9).to_s }.gsub('#') { rand(10).to_s }
       end
 
       def letterify(letter_string)
-        letter_string.gsub(/\?/) { sample(ULetters) }
+        letter_string.gsub('?') { sample(ULetters) }
       end
 
       def bothify(string)
         letterify(numerify(string))
+      end
+
+      def generate(as_type, &block)
+        PositionalGenerator.new(as_type, &block).generate
       end
 
       # Given a regular expression, attempt to generate a string
@@ -86,7 +92,7 @@ module Faker
         reg = reg.source if reg.respond_to?(:source) # Handle either a Regexp or a String that looks like a Regexp
         reg
           .gsub(%r{^/?\^?}, '').gsub(%r{\$?/?$}, '') # Ditch the anchors
-          .gsub(/\{(\d+)\}/, '{\1,\1}').gsub(/\?/, '{0,1}') # All {2} become {2,2} and ? become {0,1}
+          .gsub(/\{(\d+)\}/, '{\1,\1}').gsub('?', '{0,1}') # All {2} become {2,2} and ? become {0,1}
           .gsub(/(\[[^\]]+\])\{(\d+),(\d+)\}/) { |_match| Regexp.last_match(1) * sample(Array(Range.new(Regexp.last_match(2).to_i, Regexp.last_match(3).to_i))) }                # [12]{1,2} becomes [12] or [12][12]
           .gsub(/(\([^)]+\))\{(\d+),(\d+)\}/) { |_match| Regexp.last_match(1) * sample(Array(Range.new(Regexp.last_match(2).to_i, Regexp.last_match(3).to_i))) }                 # (12|34){1,2} becomes (12|34) or (12|34)(12|34)
           .gsub(/(\\?.)\{(\d+),(\d+)\}/) { |_match| Regexp.last_match(1) * sample(Array(Range.new(Regexp.last_match(2).to_i, Regexp.last_match(3).to_i))) }                      # A{1,2} becomes A or AA or \d{3} becomes \d\d\d
@@ -243,6 +249,10 @@ module Faker
         list.shuffle(random: Faker::Config.random)
       end
 
+      def shuffle!(list)
+        list.shuffle!(random: Faker::Config.random)
+      end
+
       def rand(max = nil)
         if max.nil?
           Faker::Config.random.rand
@@ -259,58 +269,6 @@ module Faker
         yield
       ensure
         I18n.enforce_available_locales = old_enforce_available_locales
-      end
-
-      private
-
-      def warn_for_deprecated_arguments
-        keywords = []
-        yield(keywords)
-
-        return if keywords.empty?
-
-        method_name = caller.first.match(/`(?<method_name>.*)'/)[:method_name]
-
-        keywords.each.with_index(1) do |keyword, index|
-          i = case index
-              when 1 then '1st'
-              when 2 then '2nd'
-              when 3 then '3rd'
-              else "#{index}th"
-              end
-
-          warn_with_uplevel(<<~MSG, uplevel: 5)
-            Passing `#{keyword}` with the #{i} argument of `#{method_name}` is deprecated. Use keyword argument like `#{method_name}(#{keyword}: ...)` instead.
-          MSG
-        end
-
-        warn(<<~MSG)
-
-          To automatically update from positional arguments to keyword arguments,
-          install rubocop-faker and run:
-
-          rubocop \\
-            --require rubocop-faker \\
-            --only Faker/DeprecatedArguments \\
-            --auto-correct
-
-        MSG
-      end
-
-      # Workaround for emulating `warn '...', uplevel: 1` in Ruby 2.4 or lower.
-      def warn_with_uplevel(message, uplevel: 1)
-        at = parse_caller(caller[uplevel]).join(':')
-        warn "#{at}: #{message}"
-      end
-
-      def parse_caller(at)
-        # rubocop:disable Style/GuardClause
-        if /^(.+?):(\d+)(?::in `.*')?/ =~ at
-          file = Regexp.last_match(1)
-          line = Regexp.last_match(2).to_i
-          [file, line]
-        end
-        # rubocop:enable Style/GuardClause
       end
     end
   end

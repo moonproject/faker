@@ -1,12 +1,16 @@
 # frozen_string_literal: true
 
 require 'simplecov'
-SimpleCov.formatter = SimpleCov::Formatter::HTMLFormatter
+
+require 'simplecov_json_formatter'
+SimpleCov.formatter = SimpleCov::Formatter::JSONFormatter
+
 SimpleCov.start do
   add_filter ['.bundle', 'lib/extensions', 'test']
 end
 
 require_relative 'support/assert_not_english'
+require_relative 'support/assert_email_regex'
 require 'minitest/autorun'
 require 'test/unit'
 require 'rubygems'
@@ -20,21 +24,20 @@ require File.expand_path("#{File.dirname(__FILE__)}/../lib/faker")
 #   times with the same deterministic_random seed.
 # @param subject_proc [Proc] a proc object that returns the subject under test
 #   when called.
-# @param depth [Integer] the depth of deterministic comparisons to run.
-# @param random [Integer] A random number seed; Used to override the default.
+# @param depth [Integer] the depth of deterministic comparisons to run; the default value is 2.
+# @param seed [Integer] A random number seed; Used to override the default value which is 42.
 #
 # @example
 #   deterministically_verify ->{ @tester.username('bo peep') } do |subject|
 #     assert subject.match(/(bo(_|\.)peep|peep(_|\.)bo)/)
 #   end
 #
-def deterministically_verify(subject_proc, depth: 2, random: nil, &block)
-  raise 'need block' unless block_given?
+def deterministically_verify(subject_proc, depth: 2, seed: 42)
+  results = depth.times.map do
+    Faker::Config.stub :random, Random.new(seed) do
+      yield subject_proc.call.freeze
+    end
+  end
 
-  # rubocop:disable Style/MultilineBlockChain
-  depth.times.inject([]) do |results, _index|
-    Faker::Config.random = random || Random.new(42)
-    results << subject_proc.call.freeze.tap(&block)
-  end.repeated_combination(2) { |(first, second)| assert_equal first, second }
-  # rubocop:enable Style/MultilineBlockChain
+  results.combination(2) { |(first, second)| assert_equal first, second }
 end
