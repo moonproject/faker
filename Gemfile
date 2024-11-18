@@ -7,7 +7,7 @@ gemspec
 
 gem 'benchmark'
 gem 'minitest', '5.25.0'
-gem 'pry', '0.14.2'
+gem 'pry', '0.15.0'
 gem 'rake', '13.2.1'
 gem 'rubocop', '1.65.1'
 gem 'rubocop-minitest', '0.35.1'
